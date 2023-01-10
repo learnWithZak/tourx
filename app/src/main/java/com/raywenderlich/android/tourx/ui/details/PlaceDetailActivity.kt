@@ -115,8 +115,7 @@ class PlaceDetailActivity : BaseActivity<PlaceDetail>() {
 
       val isTwoWayTravelObservable = twoWayTravelCheckbox.toObservable()
       val totalPassengerObservable = numberOfPassengerPicker.toObservable()
-      combineUsingConcat(isTwoWayTravelObservable, totalPassengerObservable)
-      // combineUsingCombineLatest(this, isTwoWayTravelObservable, totalPassengerObservable)
+      combineUsingCombineLatest(this, isTwoWayTravelObservable, totalPassengerObservable)
 
     }
   }
