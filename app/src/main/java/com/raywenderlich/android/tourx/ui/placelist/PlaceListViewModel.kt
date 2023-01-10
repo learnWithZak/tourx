@@ -39,11 +39,13 @@ import com.raywenderlich.android.tourx.networking.ApiService
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.functions.BiFunction
 import io.reactivex.rxkotlin.addTo
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.rxkotlin.zipWith
 import io.reactivex.schedulers.Schedulers
 import java.util.concurrent.TimeUnit
+import io.reactivex.functions.Function
 
 class PlaceListViewModel
 @ViewModelInject constructor(private val service: ApiService) : BaseViewModel<Places>() {
@@ -147,6 +149,36 @@ class PlaceListViewModel
   }
 
   fun demonstrateJoinBehavior() {
+      disposeCurrentlyRunningStreams()
+      val firstObservable = Observable.interval(1000, TimeUnit.MILLISECONDS)
+          .map {
+              return@map "SOURCE-1 $it"
+          }
+
+      val secondObservable = Observable.interval(3000, TimeUnit.MILLISECONDS)
+          .map { return@map "SOURCE-2 $it" }
+
+
+      val firstWindow = Function<String, Observable<Long>> {
+          Observable.timer(0, TimeUnit.SECONDS)
+      }
+      val secondWindow = Function<String, Observable<Long>> {
+          Observable.timer(0, TimeUnit.SECONDS)
+      }
+
+
+      val resultSelector = BiFunction<String, String, String> { t1, t2 ->
+          return@BiFunction "$t1, $t2"
+      }
+
+
+      firstObservable.join(secondObservable, firstWindow, secondWindow, resultSelector)
+          .doOnNext {
+              Log.i(LOG_TAG, it)
+          }
+          .subscribeOn(Schedulers.single())
+          .observeOn(Schedulers.single())
+          .subscribe().addTo(disposable)
   }
 
 
