@@ -40,6 +40,7 @@ import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.addTo
 import io.reactivex.rxkotlin.subscribeBy
+import io.reactivex.rxkotlin.zipWith
 import io.reactivex.schedulers.Schedulers
 
 class PlaceListViewModel
@@ -69,6 +70,17 @@ class PlaceListViewModel
    * Uses [Observable.zip] underneath so waits for all the [Observable] to complete.
    */
   fun loadAllAtOnce() {
+      startLoading()
+      service.fetchEarthPlaces()
+          .zipWith(service.fetchMarsPlaces())
+          .subscribeOn(Schedulers.io())
+          .observeOn(AndroidSchedulers.mainThread())
+          .doOnSubscribe { recordStartTime() }
+          .map {
+              return@map listOf(*it.first.toTypedArray(), *it.second.toTypedArray())
+          }
+          .subscribeBy(onSuccess = onSuccessHandler, onError = onErrorHandler)
+          .addTo(disposable)
   }
 
 
