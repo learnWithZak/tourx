@@ -43,6 +43,7 @@ import io.reactivex.rxkotlin.addTo
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.rxkotlin.zipWith
 import io.reactivex.schedulers.Schedulers
+import java.util.concurrent.TimeUnit
 
 class PlaceListViewModel
 @ViewModelInject constructor(private val service: ApiService) : BaseViewModel<Places>() {
@@ -123,6 +124,26 @@ class PlaceListViewModel
   }
 
   fun demonstrateSwitchOnNext() {
+      disposeCurrentlyRunningStreams()
+      val outerSource = Observable.interval(3, TimeUnit.SECONDS)
+          .doOnNext {
+              Log.i(LOG_TAG, "Emitter by OuterSource: $it")
+          }
+
+      val innerSource = Observable.interval(1, TimeUnit.SECONDS)
+          .doOnSubscribe {
+              Log.i(LOG_TAG, "Starting InnerSource")
+          }
+
+      Observable.switchOnNext(
+          outerSource.map { return@map innerSource }
+      )
+          .doOnNext {
+              Log.i(LOG_TAG, "Relayed items $it")
+          }
+          .subscribeOn(Schedulers.single())
+          .observeOn(Schedulers.single())
+          .subscribe().addTo(disposable)
   }
 
   fun demonstrateJoinBehavior() {
