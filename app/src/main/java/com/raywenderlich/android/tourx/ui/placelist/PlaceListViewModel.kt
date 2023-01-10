@@ -183,5 +183,39 @@ class PlaceListViewModel
 
 
   fun demonstrateGroupJoin() {
+      disposeCurrentlyRunningStreams()
+
+      val leftSource = Observable.interval(1, TimeUnit.SECONDS)
+          .map { return@map "SOURCE-1 $it" }
+
+      val rightSource = Observable.interval(5, TimeUnit.SECONDS)
+          .map { return@map "SOURCE-2 $it" }
+
+
+      val leftWindow = Function<String, Observable<Long>> {
+          Observable.timer(0, TimeUnit.SECONDS)
+      }
+
+      val rightWindow = Function<String, Observable<Long>> {
+          Observable.timer(3, TimeUnit.SECONDS)
+      }
+
+
+      val resultSelector = BiFunction<String, Observable<String>, Observable<Pair<String, String>>> { t1, t2 ->
+          return@BiFunction t2.map {
+              return@map Pair(t1, it)
+          }
+      }
+
+      leftSource.groupJoin(rightSource, leftWindow, rightWindow, resultSelector)
+          .concatMap {
+              return@concatMap it
+          }
+          .subscribeOn(Schedulers.single())
+          .observeOn(Schedulers.single())
+          .doOnNext {
+              Log.i(LOG_TAG, it.toString())
+          }
+          .subscribe().addTo(disposable)
   }
 }
