@@ -30,8 +30,10 @@
 
 package com.raywenderlich.android.tourx.ui.placelist
 
+import android.util.Log
 import androidx.hilt.lifecycle.ViewModelInject
 import com.raywenderlich.android.tourx.BaseViewModel
+import com.raywenderlich.android.tourx.LOG_TAG
 import com.raywenderlich.android.tourx.entities.Places
 import com.raywenderlich.android.tourx.networking.ApiService
 import io.reactivex.Observable
@@ -47,6 +49,20 @@ class PlaceListViewModel
    * Uses [Observable.ambWith] to combine two [Observable] so only the first [Observable] to emit gets relayed.
    */
   fun loadTheQuickestOne() {
+      startLoading()
+      val earthSource = service.fetchEarthPlaces()
+      val marsSource = service.fetchMarsPlaces()
+          .doOnDispose { Log.d(LOG_TAG, "Disposing mars sources") }
+
+      earthSource.ambWith(marsSource)
+          .subscribeOn(Schedulers.io())
+          .doOnSubscribe { recordStartTime() }
+          .observeOn(AndroidSchedulers.mainThread())
+          .subscribeBy(
+              onSuccess = onSuccessHandler,
+              onError = onErrorHandler
+          )
+          .addTo(disposable)
   }
 
   /**
