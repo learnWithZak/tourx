@@ -37,6 +37,7 @@ import com.raywenderlich.android.tourx.LOG_TAG
 import com.raywenderlich.android.tourx.entities.Places
 import com.raywenderlich.android.tourx.networking.ApiService
 import io.reactivex.Observable
+import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.addTo
 import io.reactivex.rxkotlin.subscribeBy
@@ -106,6 +107,19 @@ class PlaceListViewModel
    * Waits for all the [Observable] to complete before relaying the erroneous [Observable] down the chain.
    */
   fun loadExperimental() {
+      startLoading()
+      Single.mergeDelayError(
+          service.fetchFromExperimentalApi(),
+          service.fetchMarsPlaces(),
+          service.fetchEarthPlaces()
+      ).subscribeOn(Schedulers.io())
+          .doOnSubscribe { recordStartTime() }
+          .observeOn(AndroidSchedulers.mainThread(), true)
+          .subscribeBy(
+              onNext = onDataLoadHandler,
+              onComplete = onCompleteHandler,
+              onError = onErrorHandler
+          ).addTo(disposable)
   }
 
   fun demonstrateSwitchOnNext() {
